@@ -1,0 +1,581 @@
+<html>
+  <head>
+	  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>i5ting_ztree_toc:index</title>
+		<link href="toc/style/github-bf51422f4bb36427d391e4b75a1daa083c2d840e.css" media="all" rel="stylesheet" type="text/css"/>
+		<link href="toc/style/github2-d731afd4f624c99a4b19ad69f3083cd6d02b81d5.css" media="all" rel="stylesheet" type="text/css"/>
+		<link href="toc/css/zTreeStyle/zTreeStyle.css" media="all" rel="stylesheet" type="text/css"/>
+	  <style>
+		pre {
+		    counter-reset: line-numbering;
+		    border: solid 1px #d9d9d9;
+		    border-radius: 0;
+		    background: #fff;
+		    padding: 0;
+		    line-height: 23px;
+		    margin-bottom: 30px;
+		    white-space: pre;
+		    overflow-x: auto;
+		    word-break: inherit;
+		    word-wrap: inherit;
+		}
+
+		pre a::before {
+		  content: counter(line-numbering);
+		  counter-increment: line-numbering;
+		  padding-right: 1em; /* space after numbers */
+		  width: 25px;
+		  text-align: right;
+		  opacity: 0.7;
+		  display: inline-block;
+		  color: #aaa;
+		  background: #eee;
+		  margin-right: 16px;
+		  padding: 2px 10px;
+		  font-size: 13px;
+		  -webkit-touch-callout: none;
+		  -webkit-user-select: none;
+		  -khtml-user-select: none;
+		  -moz-user-select: none;
+		  -ms-user-select: none;
+		  user-select: none;
+		}
+
+		pre a:first-of-type::before {
+		  padding-top: 10px;
+		}
+
+		pre a:last-of-type::before {
+		  padding-bottom: 10px;
+		}
+
+		pre a:only-of-type::before {
+		  padding: 10px;
+		}
+
+		.highlight { background-color: #ffffcc } /* RIGHT */
+		</style>
+  </head>
+  <body>
+	  <div>
+				<div style='width:25%;'>
+						<ul id="tree" class="ztree" style='width:100%'>
+
+						</ul>
+				</div>
+        <div id='readme' style='width:70%;margin-left:20%;'>
+          	<article class='markdown-body'>
+            	<blockquote>
+<p>nodejs爬虫教程</p>
+</blockquote>
+<h1 id="-">爬去首页获取全部章节列表</h1>
+<ul>
+<li>目标网址：<a href="http://www.biquku.com/0/330/">http://www.biquku.com/0/330/</a></li>
+<li>技术选型<ul>
+<li>crawler 地址：<a href="https://www.npmjs.com/package/crawler">https://www.npmjs.com/package/crawler</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="-dom">获取首页页面dom</h2>
+<p>测试demo：</p>
+<pre><code>var Crawler = require(&quot;crawler&quot;);
+&lt;!-- 配置crawler,注意获取dom对象，是挂载到result.$上面的 --&gt;
+var c = new Crawler({
+    maxConnections : 100,
+    forceUTF8:true,
+  // incomingEncoding: &#39;gb2312&#39;,
+    // This will be called for each crawled page
+    callback : function (error, result, done) {
+      var $ = result.$;
+      var urls = $(&#39;#list a&#39;);
+      console.log(urls)
+      done();
+    }
+});
+
+c.queue(&#39;http://www.biquku.com/0/330/&#39;);
+</code></pre><h2 id="-">获取首页页面的章节列表：</h2>
+<p> <strong>demo2</strong>:</p>
+<pre><code>var Crawler = require(&quot;crawler&quot;);
+// 定义一个对象保存获取的数据;
+/*
+current_book 数据结构如下：
+current_book = {
+    title:&quot;XXX&quot;,
+    author:&quot;XXX&quot;,
+    update_time:&quot;XXX&quot;,
+    latest_chapter:&quot;XXX&quot;,
+    intro:&quot;XXX&quot;,
+    chapters:[ 
+        {num:&quot;xxx&quot;,url:&quot;xxx&quot;,title:&quot;xxx&quot;},
+        {...},
+        {...} 
+        ],
+    }
+ */
+
+var current_book = { }
+var c = new Crawler({
+    // 最大并发数量，每次最多发送多少个请求；
+    maxConnections : 100,
+    forceUTF8:true,
+    // incomingEncoding: &#39;gb2312&#39;,
+    // This will be called for each crawled page
+    callback : function (error, result, done) {
+    var $ = result.$;
+    var urls = $(&#39;#list a&#39;);
+     // console.log(urls)
+      current_book.title = $(&#39;#maininfo h1&#39;).text()
+      current_book.author = $(&#39;#info p&#39;).eq(0).text()
+      current_book.update_time = $(&#39;#info p&#39;).eq(2).text()
+      current_book.latest_chapter = $(&#39;#info p&#39;).eq(3).html()
+      current_book.intro = $(&#39;#intro&#39;).html()
+      current_book.chapters = [];
+
+      for(var i = 0; i&lt; urls.length; i++){
+        var url = urls[i]
+        var _url = $(url).attr(&#39;href&#39;)+&quot;&quot;;
+        var num = _url.replace(&#39;.html&#39;,&#39;&#39;);
+        var title = $(url).text();
+        current_book.chapters.push({
+          num: num,
+          title: title,
+          url: _url
+        })
+      }
+      console.log(current_book);
+      done()
+    }
+});
+
+c.queue(&#39;http://www.biquku.com/0/330/&#39;);
+</code></pre><p>每一个章节的url拿到了，下面就是请求每个章节的数据了；</p>
+<h2 id="-">爬取某一章</h2>
+<p>分析一下url的地址：</p>
+<blockquote>
+<p>第一章 北灵院 <a href="http://www.biquku.com/0/330/153065.html">http://www.biquku.com/0/330/153065.html</a>
+和之前的地址的差别是什么呢？
+首页 <a href="http://www.biquku.com/0/330">http://www.biquku.com/0/330</a> 是一样的，只不过多了一个文件名称;
+153065.html章节地址</p>
+</blockquote>
+<p>思路如下：
+chapters: 
+[ { num: &#39;153064&#39;, title: &#39;第一章已发。&#39;, url: &#39;153064.html&#39; }...]
+也就是说 url 即是章节地址，剩下的就拼接起来就好了。</p>
+<pre><code>function one(chapter){
+  console.log(chapter)
+  c.queue([{
+    uri: &#39;http://www.biquku.com/0/330/&#39; + chapter.num + &#39;.html&#39;,
+    forceUTF8:true,
+    // The global callback won&#39;t be called
+    callback: function (error, result, done) {
+        var $ = result.$;
+        var content = $(&#39;#content&#39;).html();
+        console.log(content);
+        done();
+    }
+  }]);
+}
+</code></pre><p>将这个函数集成到index2.js中，也就是index3.js;
+执行一下index3.js看有什么效果；
+结果为打印某一章节的数据；
+示例代码：</p>
+<pre><code>var Crawler = require(&quot;crawler&quot;);
+// 请求某一章节的函数；
+function one(chapter,callback){
+  c.queue([{
+    uri: &#39;http://www.biquku.com/0/330/&#39; + chapter.num + &#39;.html&#39;,
+    forceUTF8:true,
+    // The global callback won&#39;t be called
+    callback: function (error, result, done1) {
+        var $ = result.$;
+        var content = $(&#39;#content&#39;).html();
+        console.log(content);
+        // 注意执行完成后执行一个回调;这个done1和done不一样;
+        done1();
+        // 这个callback是执行请求urls完成后的回调;
+        callback();
+    }
+  }]);
+}
+
+var current_book = { }
+var c = new Crawler({
+    // 最大并发数量，每次最多发送多少个请求；
+    maxConnections : 100,
+    forceUTF8:true,
+    // incomingEncoding: &#39;gb2312&#39;,
+    // This will be called for each crawled page
+    callback : function (error, result, done) {
+    var $ = result.$;
+    var urls = $(&#39;#list a&#39;);
+      current_book.title = $(&#39;#maininfo h1&#39;).text()
+      current_book.author = $(&#39;#info p&#39;).eq(0).text()
+      current_book.update_time = $(&#39;#info p&#39;).eq(2).text()
+      current_book.latest_chapter = $(&#39;#info p&#39;).eq(3).html()
+      current_book.intro = $(&#39;#intro&#39;).html()
+      current_book.chapters = [];
+
+      for(var i = 0; i&lt; urls.length; i++){
+        var url = urls[i]
+        var _url = $(url).attr(&#39;href&#39;)+&quot;&quot;;
+        var num = _url.replace(&#39;.html&#39;,&#39;&#39;);
+        var title = $(url).text();
+        current_book.chapters.push({
+          num: num,
+          title: title,
+          url: _url
+        })
+      }
+      // 在获取章节后 在去获取具体某一章节;
+      one(current_book.chapters[4],done)
+    }
+});
+
+c.queue(&#39;http://www.biquku.com/0/330/&#39;);
+</code></pre><h2 id="-">总结</h2>
+<p>爬取一本书的流程</p>
+<ul>
+<li>先获取列表</li>
+<li>再去获取章节</li>
+</ul>
+<p><em>技能</em></p>
+<p>node-crawler 爬取，发送http请求，是基于request模块的</p>
+<p>node-crawler有2种用法：</p>
+<ul>
+<li>c.queue方法如无callback，走全局的callback，这是获取列表的时候的用法</li>
+<li>c.queue方法如有callback，走自己的callback，这是获取章节的用法
+我们的做法：
+最小化问题，先关注爬取一本书的流程
++爬取一本书的流程中的列表
++爬取一本书的流程中的章节
+在这个过程中，我们可以很好的学习crawler和jquery的dom操作，知识点整体来说比较少，更加容易学习。</li>
+</ul>
+<p>下面，爬取的信息咋办呢？见下一章。</p>
+<h1 id="-">爬去章节内容；</h1>
+<p>首先大家考虑一个问题，上节解决的是爬取问题，已经可以成功取到信息了，那么如何处理爬取到的信息呢？
+<strong>缓存设计：使用dist目录</strong>
+爬取的信息有2种处理办法</p>
+<ul>
+<li>写到文件里，核心是文字，爬取下来是html，直接静态化是比较好的</li>
+<li>那么书的简介和章节呢？这部分可能是动态的
+ -生成book.json
+ -保存到数据库
+综合来看，写文件肯定是最简单的办法。为了便于大家学习，我们从简，少给大家挖坑，简单粗暴点。<h2 id="-">创建目录</h2>
+先想想，如果是多本书，多个分类存比较好呢？<ul>
+<li>dist<ul>
+<li>330 大主宰</li>
+<li>0 玄幻
+这样的结构是不是会更清楚，更加灵活？
+创建多级目录,比如dist/0/330</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>推荐使用 <strong> mkdirp</strong> 模块;</p>
+<p>示例代码：</p>
+<pre><code>
+function mkdir(folder){
+  var mkdirp = require(&#39;mkdirp&#39;); 
+  mkdirp(&#39;dist/&#39; + folder, function (err) {
+      if (err) console.error(err)
+      else console.log(&#39;pow!&#39;)
+  });
+}
+
+mkdir(&#39;i am mkdir folder&#39;)
+</code></pre><h2 id="-">写文件</h2>
+<pre><code>var fs = require(&#39;fs&#39;)
+
+function write_chapter(chapter, content){
+  content = content.replace(&#39;[笔趣库手机版 m.biquku.com]&#39;, &#39;&#39;)
+
+  fs.writeFile(&#39;dist/i am mkdir folder/&#39; + chapter + &#39;.html&#39;, content, function (err) {
+    if (err) throw err;
+    console.log(&#39;It\&#39;s saved!&#39;);
+  });
+}
+
+var content = &quot;章节内容&quot;
+write_chapter(&#39;1&#39;, content);
+</code></pre><h2 id="-json-">写json文件</h2>
+<p>示例代码：</p>
+<pre><code>var fs = require(&#39;fs&#39;)
+
+function write_json(book){
+  var content =  JSON.stringify(book, null, 4); // Indented 4 spaces
+
+  fs.writeFile(&#39;dist/i am mkdir folder/book.json&#39;, content, function (err) {
+    if (err) throw err;
+    console.log(&#39;It\&#39;s saved!&#39;);
+  });
+}
+
+var book = { 
+  title: &#39;大主宰&#39;,
+  author: &#39;作    者：天蚕土豆&#39;,
+  update_time: &#39;更新时间：2016-07-10&#39;,
+  latest_chapter: &#39;最新章节&#39;,
+  chapters: 
+   [ { num: &#39;153064&#39;, title: &#39;第一章已发。&#39;, url: &#39;153064.html&#39; },
+     { num: &#39;153065&#39;, title: &#39;第一章 北灵院&#39;, url: &#39;153065.html&#39; },
+     { num: &#39;153066&#39;, title: &#39;第二章 被踢出灵路的少年&#39;, url: &#39;153066.html&#39; },
+     { num: &#39;153067&#39;, title: &#39;第三章 牧域&#39;, url: &#39;153067.html&#39; },
+  { num: &#39;153068&#39;, title: &#39;第四章 大浮屠诀&#39;, url: &#39;153068.html&#39; }
+  ]
+};
+write_json(book)
+</code></pre><h2 id="-utils-js-">将方法抽到utils.js里</h2>
+<pre><code>var fs = require(&#39;fs&#39;)
+var debug = require(&#39;debug&#39;)(&#39;crawler&#39;)
+
+exports.mkdir = function(folder){
+  var mkdirp = require(&#39;mkdirp&#39;);
+
+  mkdirp(&#39;dist/&#39; + folder, function (err) {
+      if (err) console.error(err)
+      else debug(&#39;pow!&#39;)
+  });
+}
+
+exports.write_chapter = function(chapter, content){
+  // content = content.replace(&#39;[笔趣库手机版 m.biquku.com]&#39;, &#39;&#39;)
+
+  fs.writeFile(&#39;dist/0/330/&#39; + chapter.num + &#39;.html&#39;, content, function (err) {
+    if (err) throw err;
+    debug(&#39;It\&#39;s saved!&#39;);
+  });
+}
+
+exports.write_config = function(book){
+  var content =  JSON.stringify(book, null, 4); // Indented 4 spaces
+  fs.writeFile(&#39;dist/0/330/book.json&#39;, content, function (err) {
+    if (err) throw err;
+    debug(&#39;It\&#39;s saved!&#39;);
+  });
+}
+</code></pre><p><em>注意区分exports.xxx和module.exports即可。</em></p>
+<p>代码里有3处用法：</p>
+<pre><code>utils.mkdir(‘0/330’);
+utils.write_config(current_book);
+utils.write_chapter(chapter, content);
+</code></pre><h2 id="-">总结</h2>
+<p>本章主要对获取的数据进行缓存操作，没有用到数据库，而是直接存储到了，文件中，</p>
+<ul>
+<li>直接写入文件中，</li>
+<li>写入json中</li>
+<li>创建目录结构
+最终代码</li>
+</ul>
+<pre><code>var Crawler = require(&quot;crawler&quot;);
+var utils = require(&#39;./utils&#39;)
+var current_book = { }
+
+var c = new Crawler({
+    maxConnections : 100,
+    forceUTF8:true,
+  // incomingEncoding: &#39;gb2312&#39;,
+    // This will be called for each crawled page
+    callback : function (error, result, done) {
+      var $ =  result.$;
+      var urls = $(&#39;#list a&#39;);      
+      utils.mkdir(&#39;0/330&#39;); 
+      current_book.title = $(&#39;#maininfo h1&#39;).text()
+      current_book.author = $(&#39;#info p&#39;).eq(0).text()
+      current_book.update_time = $(&#39;#info p&#39;).eq(2).text()
+      current_book.latest_chapter = $(&#39;#info p&#39;).eq(3).html()
+      current_book.intro = $(&#39;#intro&#39;).html()
+      current_book.chapters = [];
+
+      for(var i = 0; i&lt; urls.length; i++){
+        var url = urls[i]
+        var _url = $(url).attr(&#39;href&#39;)+&quot;&quot;;
+        var num = _url.replace(&#39;.html&#39;,&#39;&#39;);
+        var title = $(url).text();
+        current_book.chapters.push({
+          num: num,
+          title: title,
+          url: _url
+        })
+      }
+      done();
+
+      utils.write_config(current_book);
+
+      one(current_book.chapters);
+      console.log(&quot;执行到这里&quot;);
+    }});
+
+
+
+function one(chapters){
+  // 调整参数
+  var arr = chapters.map(function(chapter,i){
+    return {
+      uri: &#39;http://www.biquku.com/0/330/&#39; + chapter.num + &#39;.html&#39;,
+      forceUTF8:true,
+      // The global callback won&#39;t be called
+      callback: function (error, result, done) {
+        var $ = result.$;
+        var content = $(&#39;#content&#39;).html();
+        console.log(content)
+        utils.write_chapter(chapter, content,done);
+      }
+    }
+  });
+  c.queue(arr);
+}
+
+function start(){
+  c.queue(&#39;http://www.biquku.com/0/330/&#39;);
+}
+
+start()
+</code></pre><h1 id="-promise-">用promise优化代码：</h1>
+<p>新建promise</p>
+<pre><code>var Crawler = require(&quot;crawler&quot;);
+var utils = require(&#39;./utils&#39;)
+var current_book = { }
+
+var c = new Crawler({
+  maxConnections : 100,
+  forceUTF8:true,
+});
+
+
+/*
+
+封装的请求每一章节的函数
+ */
+
+function one(chapters){
+  // 调整参数
+  var arr = chapters.map(function(chapter,i){
+    return {
+      uri: &#39;http://www.biquku.com/0/330/&#39; + chapter.num + &#39;.html&#39;,
+      forceUTF8:true,
+      // The global callback won&#39;t be called
+      callback: function (error, result, done) {
+        var $ = result.$;
+        var content = $(&#39;#content&#39;).html();
+        console.log(content)
+        utils.write_chapter(chapter, content,done);
+      }
+    }
+  });
+  c.queue(arr);
+}
+
+/*
+用promise封装的生成文件的 promise
+ */
+var p1 = new Promise(function(relove,reject){
+utils.mkdir(&#39;0/330&#39;,relove); 
+}).then(function(data){
+  console.log(data);
+})
+
+/*
+用promise封装的 请求列表的promise
+ */
+var p = new Promise(function(relove,reject){
+    c.queue({
+    url:&#39;http://www.biquku.com/0/330/&#39;,
+    callback:function (error, result, done) {
+        var $ =  result.$;
+        var urls = $(&#39;#list a&#39;);      
+        utils.mkdir(&#39;0/330&#39;); 
+        current_book.title = $(&#39;#maininfo h1&#39;).text()
+        current_book.author = $(&#39;#info p&#39;).eq(0).text()
+        current_book.update_time = $(&#39;#info p&#39;).eq(2).text()
+        current_book.latest_chapter = $(&#39;#info p&#39;).eq(3).html()
+        current_book.intro = $(&#39;#intro&#39;).html()
+        current_book.chapters = [];
+
+        for(var i = 0; i&lt; urls.length; i++){
+          var url = urls[i]
+          var _url = $(url).attr(&#39;href&#39;)+&quot;&quot;;
+          var num = _url.replace(&#39;.html&#39;,&#39;&#39;);
+          var title = $(url).text();
+          current_book.chapters.push({
+            num: num,
+            title: title,
+            url: _url
+          })
+        }
+        relove(current_book);
+        done();
+      }
+  });
+});
+
+/*
+封装的流程promise
+ */
+
+p1.then(function(){return p}).then(function(data){
+    return new Promise(function(relove,reject){
+      utils.write_config(data,relove);
+    })
+  }).then(function(data){
+    console.log(data);
+    one(data.chapters);
+  })
+</code></pre><h1 id="-">编写小说阅读器</h1>
+<p>之前我们通过爬取和缓存，可以获得book.json和章节信息。</p>
+<pre><code>{
+    &quot;title&quot;: &quot;大主宰&quot;,
+    &quot;author&quot;: &quot;作    者：天蚕土豆&quot;,
+    &quot;update_time&quot;: &quot;更新时间：2016-07-10&quot;,
+    &quot;latest_chapter&quot;: &quot;最新章节......&quot;,
+    &quot;chapters&quot;: [
+        {
+            &quot;num&quot;: &quot;153064&quot;,
+            &quot;title&quot;: &quot;第一章已发。&quot;,
+            &quot;url&quot;: &quot;153064.html&quot;
+        },
+        {
+            &quot;num&quot;: &quot;153065&quot;,
+            &quot;title&quot;: &quot;第一章 北灵院&quot;,
+            &quot;url&quot;: &quot;153065.html&quot;
+        },
+        {
+            &quot;num&quot;: &quot;153066&quot;,
+            &quot;title&quot;: &quot;第二章 被踢出灵路的少年&quot;,
+            &quot;url&quot;: &quot;153066.html&quot;
+        },
+        {
+            &quot;num&quot;: &quot;153067&quot;,
+            &quot;title&quot;: &quot;第三章 牧域&quot;,
+            &quot;url&quot;: &quot;153067.html&quot;
+        },
+        {
+            &quot;num&quot;: &quot;153068&quot;,
+            &quot;title&quot;: &quot;第四章 大浮屠诀&quot;,
+            &quot;url&quot;: &quot;153068.html&quot;
+        }
+    ]
+}
+</code></pre>
+          	</article>
+        </div>
+		</div>
+  </body>
+</html>
+<script type="text/javascript" src="toc/js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="toc/js/jquery.ztree.all-3.5.min.js"></script>
+<script type="text/javascript" src="toc/js/ztree_toc.js"></script>
+<script type="text/javascript" src="toc_conf.js"></script>
+
+<SCRIPT type="text/javascript" >
+<!--
+$(document).ready(function(){
+    var css_conf = eval(markdown_panel_style);
+    $('#readme').css(css_conf)
+    
+    var conf = eval(jquery_ztree_toc_opts);
+		$('#tree').ztree_toc(conf);
+});
+//-->
+</SCRIPT>

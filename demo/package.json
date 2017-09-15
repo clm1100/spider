@@ -1,0 +1,26 @@
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index1.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.5.0",
+    "cheerio": "^1.0.0-rc.2",
+    "crawler": "^1.0.5",
+    "eventproxy": "^1.0.0",
+    "iconv-lite": "^0.4.18",
+    "jsdom": "^11.2.0",
+    "lodash": "^4.17.4",
+    "mkdirp": "^0.5.1",
+    "request": "^2.81.0",
+    "request-promise": "^4.2.1",
+    "superagent": "^3.6.0",
+    "superagent-charset": "^1.2.0"
+  }
+}

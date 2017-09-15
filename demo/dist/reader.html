@@ -1,0 +1,100 @@
+<html>
+  <head> 
+    <title>第十二章 出手_大主宰_笔趣阁</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+    <!-- <link rel="stylesheet" type="text/css" href="./css/reader.css" />  -->
+    <!-- <script type="text/javascript" src="./js/zepto.min.js"></script>  -->
+    <!-- <script type="text/javascript" src="./js/main.js"></script>  -->
+    <script type="text/javascript" src="jquery.js"></script> 
+ </head>
+  <body> 
+  <div id="wrapper"> 
+     <div class="content_read"> 
+      <div class="box_con"> 
+       <div class="con_top"> 
+          <a href="/">小说阅读器</a> &gt; 
+          <a href="/xiaoshuo1/">玄幻小说</a> &gt; 
+          <a href="/0/330/">大主宰</a> &gt; 正文 <span class='chapter_title'>第十二章 出手 </span>
+       </div> 
+       <div class="bookname"> 
+        <h1 class='chapter_title'>第十二章 出手</h1> 
+          <div class="bottem1"> 
+             <a href="javascript:;" class='pre_chapter_btn'>上一章</a> ← 
+             <a href="javascript:;" class='chapter_btn'>章节列表</a> → 
+             <a href="javascript:;" class='post_chapter_btn'>下一章</a> 
+             <a href="javascript:;" class='bookmark'>加入书签</a> 
+          </div> 
+       </div> 
+   
+       <div id="content">
+         正文加载中。。。       </div>
+
+       <div class="bottem2"> 
+         <a href="javascript:;" class='pre_chapter_btn'>上一章</a> ← 
+         <a href="javascript:;" class='chapter_btn'>章节列表</a> → 
+         <a href="javascript:;" class='post_chapter_btn'>下一章</a> 
+         <a href="javascript:;" class='bookmark'>加入书签</a>
+       </div> 
+    </div> 
+   </div> 
+  </div> 
+  <script>
+
+function getQueryStringByName(name){
+  var result = location.search.match(new RegExp("[\?\&]" + name+ "=([^\&]+)","i"));
+  if(result == null || result.length < 1){
+    return "";
+  }
+  return result[1];
+}
+
+var type = getQueryStringByName('type');
+var book = getQueryStringByName('book');
+var chapter = getQueryStringByName('chapter');
+
+
+function load(chapter_info){ 
+  $('title').html(chapter_info.title)
+  $('.chapter_title').html(chapter_info.title)
+  $('#content').load(type + '/' + book + '/' + chapter_info.url);
+}
+
+//上一章
+  $('.pre_chapter_btn').on('click', function(){
+    var str = window.location.href.substring(0,window.location.href.lastIndexOf("=")+1);
+    var str1 = str+(parseInt(chapter,10)-1)
+    window.location.href = str1;
+  })
+  
+  //章节列表
+  $('.chapter_btn').on('click', function(){
+    window.scrollTo(0,0)
+  })
+  
+  //下一章
+  $('.post_chapter_btn').on('click', function(){
+    
+    var str = window.location.href.substring(0,window.location.href.lastIndexOf("=")+1);
+    var str1 = str+(parseInt(chapter,10)+1)
+    window.location.href = str1;
+    
+   
+  })
+
+
+$(function(){
+    console.log(type,book,chapter)
+    $.getJSON(type + '/' + book + '/book.json', function(data){
+      console.log("=======================================")
+        var current_book = data;
+        
+        var pre_chapter_info    = current_book.chapters[parseInt(chapter) - 1]
+        var chapter_info        = current_book.chapters[chapter]
+        var post_chapter_info   = current_book.chapters[parseInt(chapter) + 1]
+        
+        load(chapter_info)
+      })
+    })
+  </script>
+ </body>
+ </html>
